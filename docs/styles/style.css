@@ -1,0 +1,50 @@
+body, html {
+	padding: 0;
+	margin: 0;
+}
+
+body {
+	background-color: rgb(28, 27, 34);
+}
+
+#maincanvas {
+	vertical-align: bottom;
+}
+
+#debughoverinfo {
+	position: fixed;
+	background-color: #ffffffc0;
+	color: black;
+	font-family: monospace;
+	padding: 10px;
+	border: 1px solid #000000c0;
+	pointer-events: none;
+	display: none;
+	box-shadow: 0 0 5px 0px #00000050;
+}
+
+#controls {
+	height: 5vh;
+	display: flex;
+	flex-direction: row;
+	padding: 0 10px;
+	background-color: #ffffff07;
+	box-shadow: 0 0 10px 0px #00000050 inset;
+}
+
+#controls > .section {
+	display: flex;
+	flex-direction: row;
+	margin: 5px 10px;
+}
+
+#controls > .section > * {
+	display: inline-block;
+	top: 0;
+	bottom: 0;
+	margin: auto 0;
+	padding: 0 10px;
+	color: #555;
+	font-weight: bold;
+	font-family: sans-serif;
+}

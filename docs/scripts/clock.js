@@ -1,6 +1,8 @@
-import { Ticker } from '/scripts/ticker.js'
-import { audioSamples } from '/scripts/samples.js'
+import { Ticker } from '/scripts/ticker.js';
+import { audioSamples } from '/scripts/samples.js';
+import { Slider } from '/scripts/controls.js';
 
+// Resolves the promise at 'time'
 function audioTimeTrigger(audioCtx, time) {
 	// A little hacky:
 	// Play silence and stop at 'time', then catch the 'ended'
@@ -16,17 +18,12 @@ function audioTimeTrigger(audioCtx, time) {
 	});
 }
 
-const controls = [
-	{ name: "Record", action: clock => clock.recordBeats() },
-	{ name: "Change sample", action: clock => clock.nextSample() },
-	{ name: "Delete", action: clock => console.log("Delete") },
-	{ name: "Volume", action: clock => console.log("Volume") },
-	{ name: "Length", action: clock => console.log("Length") },
-	{ name: "Snapping", action: clock => console.log("Snapping") },
-];
-
+/**
+ * Represents a single clock that gets drawn to the screen
+ */
 export function Clock(audioCtx) {
 	const gainNode = audioCtx.createGain();
+	let destination = null;
 
 	let radius = 80,
 	    handleRadius = 0.2 * radius,
@@ -103,6 +100,20 @@ export function Clock(audioCtx) {
 
 
 	/*
+	 * The sections of the controls pie that appears when a clock is hovered over
+	 */
+
+	const controls = [
+		{ name: "Record", action: () => this.recordBeats() },
+		{ name: "Change sample", action: () => this.nextSample() },
+		{ name: "Delete", action: () => console.log("Delete") },
+		{ name: "Volume", slider: new Slider(() => this.getVolume(), val => this.setVolume(val), 0, 1, 0, 0.4) },
+		{ name: "Length", slider: new Slider(() => this.getLength(), val => this.setLength(val), 1, 16, 1, 4) },
+		{ name: "Snapping", action: () => console.log("Change snapping") },
+	];
+
+
+	/*
 	 * Other methods
 	 */
 
@@ -116,6 +127,7 @@ export function Clock(audioCtx) {
 		    `color: ${color}`,
 		    `position: ${position.x}, ${position.y}`,
 		    `length: ${length} beats`,
+		    `volume: ${this.getVolume()}`,
 		    `rawBeats (in s): [${rawBeats.join(', ')}]`,
 		    `beats (in s): [${beats.join(', ')}]`,
 		    `snapInterval: ${snapInterval} s`,
@@ -128,13 +140,17 @@ export function Clock(audioCtx) {
 	}
 
 	/**
-	 * Click handler
+	 * Click handler for the pie controls
 	 */
 	this.click = function(x, y) {
 		if (!showControls || recordingState > 0) return;
 		const angle = Math.atan2(y - position.y, x - position.x) + Math.PI;
 		const control = controls[Math.floor(controls.length * 0.5 * angle / Math.PI)];
-		control.action(this);
+		if (control.action) {
+			control.action(this);
+		} else if (control.slider) {
+			control.slider.startChanging(y);
+		}
 	}
 
 	/**
@@ -170,10 +186,11 @@ export function Clock(audioCtx) {
 	}
 
 	/**
-	 *Connect the clock to an audio input
+	 * Connect the clock to an audio input
 	 */
 	this.connect = function(dest) {
 		gainNode.connect(dest);
+		destination = dest;
 		return this;
 	}
 
@@ -238,7 +255,7 @@ export function Clock(audioCtx) {
 			// Create ticker to count in
 			new Ticker(audioCtx, audioSamples.find(s => s.name === "sticks"))
 				.queueBeats([0, 1, 2, 3].map(b => beatToTime(b)))
-				.connect(gainNode)
+				.connect(destination)
 				.start(toRealTime(startTime) - beatToTime(4));
 
 			// Wait until time to start recording
@@ -247,13 +264,11 @@ export function Clock(audioCtx) {
 
 			// Add beats as the key is pressed
 			const beats = [];
-			const sound = new Ticker(audioCtx, sample).connect(gainNode);
 			const recordBeat = e => {
 				// Constrain t to be within recording time
-				//const t = Math.max(startTime, Math.min(endTime, offsetTime()));
-				const t = offsetTime();
-				if (e.code === 'KeyZ') {
-					sound.playNow();
+				const t = Math.max(startTime, Math.min(endTime, offsetTime()));
+				if (['KeyD', 'KeyF', 'KeyJ', 'KeyK'].includes(e.code)) {
+					ticker.playNow();
 					beats.push(timeToBeat(t - startTime));
 					this.setBeats(beats);
 				}

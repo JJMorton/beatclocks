@@ -10,9 +10,9 @@
  * - Option to loop single section
  */
 
-import { Ticker } from '/scripts/ticker.js';
 import { Clock } from '/scripts/clock.js';
-import { audioSamples, fetchSamples } from '/scripts/samples.js';
+import { fetchSamples } from '/scripts/samples.js';
+import { Slider } from '/scripts/controls.js';
 
 window.addEventListener('load', async function() {
 	'use strict';
@@ -28,7 +28,7 @@ window.addEventListener('load', async function() {
 	window.addEventListener('resize', () => canvasFillWindow(canvas));
 	function canvasFillWindow(canvas) {
 		canvas.width = window.innerWidth;
-		canvas.height = window.innerHeight * 0.95;
+		canvas.height = window.innerHeight;
 	}
 
 	let showDebug = false;
@@ -56,12 +56,13 @@ window.addEventListener('load', async function() {
 			.setLength(2)
 			.setTimeOffset(timeOffset)
 			.setBPM(bpm)
-			.setBeats([0, 0.5, 1])
+			// .setBeats([0, 0.5, 1])
 			.connect(gainNode)
 	);
 
 	// Let clocks handle clicks, or add a new clock if clicked background
-	canvas.addEventListener('click', e => {
+	canvas.addEventListener('mousedown', e => {
+		if (e.button != 0) return;
 		const clicked = clocks.find(c => c.containsPosition(mousePos.x, mousePos.y));
 		if (clicked) {
 			clicked.click(mousePos.x, mousePos.y);
@@ -104,20 +105,8 @@ window.addEventListener('load', async function() {
 
 	// UI handlers
 	{
-		const volumeControl = document.getElementById('volume');
-		volumeControl.addEventListener('input', e => {
-			gainNode.gain.setValueAtTime(e.target.value, 0);
-		});
-		volumeControl.value = gainNode.gain.value;
-
-		const BPMControl = document.getElementById('bpm');
-		BPMControl.addEventListener('input', e => {
-			setBPM(e.target.value);
-		});
-		BPMControl.value = bpm;
-
 		window.addEventListener('mousemove', e => {
-			mousePos = { x: e.pageX, y: e.pageY };
+			mousePos = { x: e.clientX, y: e.clientY };
 		});
 
 		window.addEventListener('keydown', e => {
@@ -131,6 +120,28 @@ window.addEventListener('load', async function() {
 				showDebug = false;
 				debuginfoElt.style.display = "none";
 			}
+		});
+
+		const BPMElt = document.getElementById('bpm');
+		const BPMEltValue = BPMElt.querySelector('.value');
+		const BPMSlider = new Slider(() => bpm, val => {
+			setBPM(val);
+			BPMEltValue.textContent = val.toString().padStart(3, '0');
+		}, 50, 200, 1, 40);
+		BPMSlider.init();
+		BPMElt.addEventListener('mousedown', e => {
+			BPMSlider.startChanging(e.clientY);
+		});
+
+		const volumeElt = document.getElementById('volume');
+		const volumeEltValue = volumeElt.querySelector('.value');
+		const volumeSlider = new Slider(() => gainNode.gain.value * 100, val => {
+			gainNode.gain.setValueAtTime(val / 100, 0);
+			volumeEltValue.textContent = val.toString().padStart(3, '0');
+		}, 0, 100, 1, 40);
+		volumeSlider.init();
+		volumeElt.addEventListener('mousedown', e => {
+			volumeSlider.startChanging(e.clientY);
 		});
 	}
 });

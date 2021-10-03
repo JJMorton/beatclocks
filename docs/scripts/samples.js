@@ -1,3 +1,8 @@
+/*
+ * Just contains the audio samples that are available, so they
+ * can be loaded once and imported by anything
+ */
+
 function fetchAudioSource(audioCtx, path) {
 	return new Promise((res, rej) => {
 		const req = new XMLHttpRequest();
@@ -23,12 +28,15 @@ export const audioSamples = [
 	new Sample('hihat_open'),
 	new Sample('kick'),
 	new Sample('snare'),
+	new Sample('rim'),
+	new Sample('timbale_1'),
+	new Sample('timbale_2'),
 	new Sample('sticks')
 ];
 
 export async function fetchSamples(audioCtx) {
 	for (const source of audioSamples) {
-		const audioData = await fetchAudioSource(audioCtx, `/samples/${source.name}.wav`);
+		const audioData = await fetchAudioSource(audioCtx, `/samples/latin/${source.name}.wav`);
 		source.buffer = audioData;
 	}
 }

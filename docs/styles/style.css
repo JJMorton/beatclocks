@@ -1,3 +1,7 @@
+:root {
+	--color-controls: #6ae0ce;
+}
+
 body, html {
 	padding: 0;
 	margin: 0;
@@ -24,27 +28,55 @@ body {
 }
 
 #controls {
-	height: 5vh;
+	position: absolute;
 	display: flex;
-	flex-direction: row;
-	padding: 0 10px;
-	background-color: #ffffff07;
-	box-shadow: 0 0 10px 0px #00000050 inset;
-}
-
-#controls > .section {
-	display: flex;
-	flex-direction: row;
-	margin: 5px 10px;
-}
-
-#controls > .section > * {
-	display: inline-block;
+	flex-direction: column;
+	right: 0;
 	top: 0;
 	bottom: 0;
 	margin: auto 0;
-	padding: 0 10px;
-	color: #555;
-	font-weight: bold;
+	padding: 1em 1em 0 1em;
+	pointer-events: none;
+}
+
+#controls > * {
+	margin-bottom: 1em;
+}
+
+.slider-button {
+	border: 2px solid var(--color-controls);
+	border-radius: 2em;
 	font-family: sans-serif;
+	pointer-events: all;
+	cursor: ns-resize;
+}
+
+.slider-button * {
+	-moz-user-select: none;
+	-webkit-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	pointer-events: none;
+
+	margin: 0;
+	display: inline-block;
+}
+
+.slider-button .label {
+	color: #ddd;
+	padding: 0 1em 0 0.7em;
+	font-weight: bold;
+}
+
+.slider-button .value {
+	color: black;
+	font-size: 150%;
+	font-weight: bold;
+	background-color: var(--color-controls);
+	border-radius: 2em;
+	padding: 0.4em 0.4em 0.2em 0.4em;
+	text-align: center;
+	box-sizing: border-box;
+	width: 3em;
+	height: 2em;
 }

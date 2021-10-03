@@ -19,11 +19,11 @@ window.addEventListener('load', async function() {
 
 	const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 	const gainNode = audioCtx.createGain();
-	gainNode.gain.setValueAtTime(0.2, 0);
+	gainNode.gain.setValueAtTime(0.7, 0);
 	gainNode.connect(audioCtx.destination);
 
 	const canvas = document.querySelector('#maincanvas');
-	const ctx = canvas.getContext('2d');
+	const ctx = canvas.getContext('2d', {alpha: false});
 	canvasFillWindow(canvas);
 	window.addEventListener('resize', () => canvasFillWindow(canvas));
 	function canvasFillWindow(canvas) {
@@ -56,7 +56,7 @@ window.addEventListener('load', async function() {
 			.setLength(2)
 			.setTimeOffset(timeOffset)
 			.setBPM(bpm)
-			// .setBeats([0, 0.5, 1])
+			.setBeats([0, 1])
 			.connect(gainNode)
 	);
 
@@ -80,8 +80,10 @@ window.addEventListener('load', async function() {
 	});
 
 	// Render loop
+	const background = window.getComputedStyle(document.documentElement).getPropertyValue('--color-background');
 	(function animate() {
-		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		ctx.fillStyle = background;
+		ctx.fillRect(0, 0, canvas.width, canvas.height);
 
 		if (showDebug) {
 			debuginfoElt.innerText = "Hover a clock to see its debug info";
@@ -130,7 +132,7 @@ window.addEventListener('load', async function() {
 		}, 50, 200, 1, 40);
 		BPMSlider.init();
 		BPMElt.addEventListener('mousedown', e => {
-			BPMSlider.startChanging(e.clientY);
+			BPMSlider.startChanging(e.clientX, e.clientY);
 		});
 
 		const volumeElt = document.getElementById('volume');
@@ -141,7 +143,7 @@ window.addEventListener('load', async function() {
 		}, 0, 100, 1, 40);
 		volumeSlider.init();
 		volumeElt.addEventListener('mousedown', e => {
-			volumeSlider.startChanging(e.clientY);
+			volumeSlider.startChanging(e.clientX, e.clientY);
 		});
 	}
 });

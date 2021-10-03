@@ -1,5 +1,7 @@
 :root {
 	--color-controls: #6ae0ce;
+	--color-background: #1c1b22;
+	--color-background-alt: #23222b;
 }
 
 body, html {
@@ -8,23 +10,24 @@ body, html {
 }
 
 body {
-	background-color: rgb(28, 27, 34);
+	background-color: var(--color-background);
 }
 
 #maincanvas {
 	vertical-align: bottom;
 }
 
-#debughoverinfo {
+.tooltip {
 	position: fixed;
-	background-color: #ffffffc0;
-	color: black;
-	font-family: monospace;
+	background-color: var(--color-background-alt);
+	color: #ddd;
+	font-family: sans-serif;
 	padding: 10px;
-	border: 1px solid #000000c0;
+	border: 2px solid var(--color-controls);
+	border-radius: 5px;
 	pointer-events: none;
-	display: none;
 	box-shadow: 0 0 5px 0px #00000050;
+	margin: 0;
 }
 
 #controls {

@@ -1,6 +1,6 @@
 import { Ticker } from '/scripts/ticker.js';
 import { audioSamples } from '/scripts/samples.js';
-import { Slider } from '/scripts/controls.js';
+import { Slider, Tooltip } from '/scripts/controls.js';
 
 // Resolves the promise at 'time'
 function audioTimeTrigger(audioCtx, time) {
@@ -23,6 +23,7 @@ function audioTimeTrigger(audioCtx, time) {
  */
 export function Clock(audioCtx) {
 	const gainNode = audioCtx.createGain();
+	gainNode.gain.value = 0.7;
 	let destination = null;
 
 	let radius = 80,
@@ -38,7 +39,22 @@ export function Clock(audioCtx) {
 	    sample = audioSamples[0],
 	    timeOffset = 0,
 	    showControls = false,
-	    recordingState = 0; // 0 - not recording, 1 - counting down, 2 - recording
+	    recordingState = 0, // 0 - not recording, 1 - counting down, 2 - recording
+	    changingControl = false; // If the user is changing a value in the controls using a slider
+
+
+	/*
+	 * The sections of the controls pie that appears when a clock is hovered over
+	 */
+
+	const controls = [
+		{ name: "Record", action: () => this.recordBeats() },
+		{ name: "Change sample", action: () => this.nextSample() },
+		{ name: "Delete", action: () => console.log("Delete") },
+		{ name: "Volume", slider: new Slider(() => this.getVolume(), val => this.setVolume(val), 0, 1, 0, 0.4, () => `Volume: ${Math.round(this.getVolume() * 100)}%`) },
+		{ name: "Length", slider: new Slider(() => this.getLength(), val => this.setLength(val), 1, 16, 0.25, 1, () => `Length: ${this.getLength() * 4}/4`) },
+		{ name: "Snapping", action: () => console.log("Change snapping") },
+	];
 
 
 	/*
@@ -100,20 +116,6 @@ export function Clock(audioCtx) {
 
 
 	/*
-	 * The sections of the controls pie that appears when a clock is hovered over
-	 */
-
-	const controls = [
-		{ name: "Record", action: () => this.recordBeats() },
-		{ name: "Change sample", action: () => this.nextSample() },
-		{ name: "Delete", action: () => console.log("Delete") },
-		{ name: "Volume", slider: new Slider(() => this.getVolume(), val => this.setVolume(val), 0, 1, 0, 0.4) },
-		{ name: "Length", slider: new Slider(() => this.getLength(), val => this.setLength(val), 1, 16, 1, 4) },
-		{ name: "Snapping", action: () => console.log("Change snapping") },
-	];
-
-
-	/*
 	 * Other methods
 	 */
 
@@ -144,12 +146,21 @@ export function Clock(audioCtx) {
 	 */
 	this.click = function(x, y) {
 		if (!showControls || recordingState > 0) return;
+		const rad2 = Math.pow(y - position.y, 2) + Math.pow(x - position.x, 2);
+		if (rad2 <= handleRadius*handleRadius) {
+			const moveListener = e => this.setPosition(e.clientX, e.clientY);
+			window.addEventListener('mousemove', moveListener);
+			window.addEventListener('mouseup', () => window.removeEventListener('mousemove', moveListener));
+			return;
+		}
 		const angle = Math.atan2(y - position.y, x - position.x) + Math.PI;
 		const control = controls[Math.floor(controls.length * 0.5 * angle / Math.PI)];
 		if (control.action) {
 			control.action(this);
-		} else if (control.slider) {
-			control.slider.startChanging(y);
+		}
+		if (control.slider) {
+			changingControl = true;
+			control.slider.startChanging(x, y).then(() => changingControl = false);
 		}
 	}
 
@@ -288,53 +299,54 @@ export function Clock(audioCtx) {
 	/**
 	 * Provide canvas context
 	 */
+	const background = window.getComputedStyle(document.documentElement).getPropertyValue('--color-background-alt');
 	this.render = function(ctx) {
 		const currentBeat = timeToBeat(offsetTime());
 		const currentBeatInBar = currentBeat % length;
 
-		ctx.fillStyle = "rgb(43, 42, 51)";
+		ctx.fillStyle = background;
 		ctx.strokeStyle = `rgb(${color.join(', ')})`;
-
-		// Time indicator around border
-		ctx.lineWidth = 10;
-		ctx.beginPath();
-		if (currentBeat % (2 * length) <= length) {
-			ctx.arc(position.x, position.y, radius, beatToAngle(0), beatToAngle(currentBeat))
-		} else {
-			ctx.arc(position.x, position.y, radius, beatToAngle(currentBeat), beatToAngle(0))
-		}
-		ctx.stroke();
 
 		// Static border
 		ctx.lineWidth = 4;
 		ctx.beginPath();
-		ctx.arc(position.x, position.y, radius, 0, 2 * Math.PI);
+		ctx.arc(Math.floor(position.x), Math.floor(position.y), Math.floor(radius), 0, 2 * Math.PI);
 		ctx.fill();
 		ctx.stroke();
 
-		if (showControls && recordingState === 0) {
+		if (showControls && !changingControl && recordingState === 0) {
 			// Controls pie
 			for (let i = 0; i < controls.length; i++) {
 				const lineAngle = i * 2 * Math.PI / controls.length;
 				ctx.lineWidth = 2;
 				ctx.beginPath();
-				ctx.moveTo(position.x, position.y);
-				ctx.lineTo(position.x + radius * Math.cos(lineAngle), position.y + radius * Math.sin(lineAngle));
+				ctx.moveTo(Math.floor(position.x), Math.floor(position.y));
+				ctx.lineTo(Math.floor(position.x + radius * Math.cos(lineAngle)), Math.floor(position.y + radius * Math.sin(lineAngle)));
 				ctx.stroke();
 			}
 		} else {
+			// Time indicator around border
+			ctx.lineWidth = 8;
+			ctx.beginPath();
+			if (currentBeat % (2 * length) <= length) {
+				ctx.arc(Math.floor(position.x), Math.floor(position.y), Math.floor(radius), beatToAngle(0), beatToAngle(currentBeat))
+			} else {
+				ctx.arc(Math.floor(position.x), Math.floor(position.y), Math.floor(radius), beatToAngle(currentBeat), beatToAngle(0))
+			}
+			ctx.stroke();
+
 			// Beats and snap indicators
 			for (let beat = 0; beat < length; beat += snapInterval) {
 				const angle = beatToAngle(beat);
 				ctx.lineWidth = 2;
 				ctx.beginPath();
 				if (beats.includes(beat)) {
-					ctx.moveTo(position.x, position.y);
+					ctx.moveTo(Math.floor(position.x), Math.floor(position.y));
 					if (currentBeatInBar >= beat && currentBeatInBar - beat < Math.max(snapInterval, 1/16)) ctx.lineWidth = 6;
 				} else {
-					ctx.moveTo(position.x + 0.9 * radius * Math.cos(angle), position.y + 0.9 * radius * Math.sin(angle));
+					ctx.moveTo(Math.floor(position.x + 0.9 * radius * Math.cos(angle)), Math.floor(position.y + 0.9 * radius * Math.sin(angle)));
 				}
-				ctx.lineTo(position.x + radius * Math.cos(angle), position.y + radius * Math.sin(angle));
+				ctx.lineTo(Math.floor(position.x + radius * Math.cos(angle)), Math.floor(position.y + radius * Math.sin(angle)));
 				ctx.stroke();
 			}
 		}
@@ -342,7 +354,7 @@ export function Clock(audioCtx) {
 		// Drag handle
 		ctx.lineWidth = 4;
 		ctx.beginPath();
-		ctx.arc(position.x, position.y, handleRadius, 0, 2 * Math.PI);
+		ctx.arc(Math.floor(position.x), Math.floor(position.y), Math.floor(handleRadius), 0, 2 * Math.PI);
 		if (recordingState === 2) {
 			ctx.fillStyle = "#dd3333";
 		}

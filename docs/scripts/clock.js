@@ -1,6 +1,6 @@
-import { Ticker } from '/scripts/ticker.js';
-import { audioSamples } from '/scripts/samples.js';
-import { Slider, Tooltip } from '/scripts/controls.js';
+import { Ticker } from './ticker.js';
+import { audioSamples } from './samples.js';
+import { Slider, Tooltip } from './controls.js';
 
 // Resolves the promise at 'time'
 function audioTimeTrigger(audioCtx, time) {

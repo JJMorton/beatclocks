@@ -10,9 +10,9 @@
  * - Option to loop single section
  */
 
-import { Clock } from '/scripts/clock.js';
-import { fetchSamples } from '/scripts/samples.js';
-import { Slider } from '/scripts/controls.js';
+import { Clock } from './clock.js';
+import { fetchSamples } from './samples.js';
+import { Slider } from './controls.js';
 
 window.addEventListener('load', async function() {
 	'use strict';

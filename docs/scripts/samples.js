@@ -36,7 +36,7 @@ export const audioSamples = [
 
 export async function fetchSamples(audioCtx) {
 	for (const source of audioSamples) {
-		const audioData = await fetchAudioSource(audioCtx, `/samples/latin/${source.name}.wav`);
+		const audioData = await fetchAudioSource(audioCtx, `samples/latin/${source.name}.wav`);
 		source.buffer = audioData;
 	}
 }

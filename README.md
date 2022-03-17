@@ -7,3 +7,4 @@ TODO:
 - [ ] Swing
 - [ ] Audio effects
 - [ ] More / better samples
+- [ ] Change recording count-in to match clock's snapping + length

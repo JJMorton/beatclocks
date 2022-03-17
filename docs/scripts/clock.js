@@ -18,13 +18,39 @@ function audioTimeTrigger(audioCtx, time) {
 	});
 }
 
+let loadedImages = false;
+let images = {
+	'record': null,
+	'sample': null,
+	'delete': null,
+	'volume': null,
+	'length': null,
+	'snapping': null
+}
+function loadImages() {
+	if (loadedImages) return;
+	loadedImages = true;
+	for (const name in images) {
+		const image = new Image();
+		image.onload = () => images[name] = image;
+		image.src = `assets/${name}.png`;
+	}
+}
+
 /**
  * Represents a single clock that gets drawn to the screen
  */
 export function Clock(audioCtx) {
+	loadImages();
+
 	const gainNode = audioCtx.createGain();
 	gainNode.gain.value = 0.7;
 	let destination = null;
+
+	// The available divisions to choose from
+	const divOptions = [2, 3, 4, 6, 8, 12, 16];
+
+	this.toDelete = false;
 
 	let radius = 80,
 	    handleRadius = 0.2 * radius,
@@ -34,7 +60,7 @@ export function Clock(audioCtx) {
 	    rawBeats = [],
 	    beats = [],
 	    ticker = null,
-	    snapInterval = 1/4,
+	    divisions = 4,
 	    bpm = 120,
 	    sample = audioSamples[0],
 	    timeOffset = 0,
@@ -48,12 +74,30 @@ export function Clock(audioCtx) {
 	 */
 
 	const controls = [
-		{ name: "Record", action: () => this.recordBeats() },
-		{ name: "Change sample", action: () => this.nextSample() },
-		{ name: "Delete", action: () => console.log("Delete") },
-		{ name: "Volume", slider: new Slider(() => this.getVolume(), val => this.setVolume(val), 0, 1, 0, 0.4, () => `Volume: ${Math.round(this.getVolume() * 100)}%`) },
-		{ name: "Length", slider: new Slider(() => this.getLength(), val => this.setLength(val), 1, 16, 0.25, 1, () => `Length: ${this.getLength() * 4}/4`) },
-		{ name: "Snapping", action: () => console.log("Change snapping") },
+		{ name: "Record", image: 'record', action: () => this.recordBeats() },
+		{ name: "Change sample", image: 'sample', action: () => this.nextSample() },
+		{ name: "Delete", image: 'delete', action: () => {
+			this.toDelete = true;
+			if (ticker) ticker.stop();
+		}},
+		{ name: "Volume", image: 'volume', slider: new Slider(
+			() => this.getVolume(),
+			val => this.setVolume(val),
+			0, 1, 0, 0.4,
+			() => `Volume: ${Math.round(this.getVolume() * 100)}%`
+		)},
+		{ name: "Length", image: 'length', slider: new Slider(
+			() => this.getLength(),
+			val => this.setLength(val),
+			1, 12, 1, 4,
+			() => `Length: ${this.getLength()} beats`
+		)},
+		{ name: "Snapping", image: 'snapping', slider: new Slider(
+			() => divOptions.indexOf(divisions),
+			index => this.setDivisions(divOptions[index]),
+			0, divOptions.length - 1, 1, 4,
+			() => `Snapping: 1/${divisions}`
+		)},
 	];
 
 
@@ -100,9 +144,9 @@ export function Clock(audioCtx) {
 		return this;
 	}
 
-	this.getSnapInterval = () => snapInterval;
-	this.setSnapInterval = function(val) {
-		snapInterval = val;
+	this.getDivisions = () => divisions;
+	this.setDivisions = function(val) {
+		divisions = val;
 		this.recalculateBeats();
 		return this;
 	}
@@ -130,9 +174,9 @@ export function Clock(audioCtx) {
 		    `position: ${position.x}, ${position.y}`,
 		    `length: ${length} beats`,
 		    `volume: ${this.getVolume()}`,
-		    `rawBeats (in s): [${rawBeats.join(', ')}]`,
-		    `beats (in s): [${beats.join(', ')}]`,
-		    `snapInterval: ${snapInterval} s`,
+		    `rawBeats: [${rawBeats.join(', ')}]`,
+		    `beats: [${beats.join(', ')}]`,
+		    `divisions: ${divisions}`,
 		    `bpm: ${bpm}`,
 		    `sample: ${sample.name}`,
 		    `timeOffset: ${timeOffset} s`,
@@ -154,7 +198,8 @@ export function Clock(audioCtx) {
 			return;
 		}
 		const angle = Math.atan2(y - position.y, x - position.x) + Math.PI;
-		const control = controls[Math.floor(controls.length * 0.5 * angle / Math.PI)];
+		const index = Math.floor(controls.length * 0.5 * angle / Math.PI);
+		const control = controls[index];
 		if (control.action) {
 			control.action(this);
 		}
@@ -220,6 +265,7 @@ export function Clock(audioCtx) {
 	 */
 	this.setBeats = function(b) {
 		// Save the raw beats so that we can change snapping, bpm etc. later and not lose any notes
+		const snapInterval = 1/divisions;
 		rawBeats = b;
 		beats = rawBeats
 		// Snap beats to 'snapInterval'
@@ -317,12 +363,26 @@ export function Clock(audioCtx) {
 		if (showControls && !changingControl && recordingState === 0) {
 			// Controls pie
 			for (let i = 0; i < controls.length; i++) {
-				const lineAngle = i * 2 * Math.PI / controls.length;
+				const deltaAngle = 2 * Math.PI / controls.length;
+				const lineAngle = i * deltaAngle - Math.PI;
+				const endpoint = [position.x + radius * Math.cos(lineAngle), position.y + radius * Math.sin(lineAngle)];
 				ctx.lineWidth = 2;
 				ctx.beginPath();
 				ctx.moveTo(Math.floor(position.x), Math.floor(position.y));
-				ctx.lineTo(Math.floor(position.x + radius * Math.cos(lineAngle)), Math.floor(position.y + radius * Math.sin(lineAngle)));
+				ctx.lineTo(...endpoint.map(x => Math.floor(x)));
 				ctx.stroke();
+				if (controls[i].image && images[controls[i].image]) {
+					const imagesize = radius / 3;
+					const imageradius = handleRadius + (radius - handleRadius) * 0.54;
+					const image = images[controls[i].image];
+					const imagepos = [
+						position.x + imageradius * Math.cos(lineAngle + deltaAngle/2) - imagesize/2,
+						position.y + imageradius * Math.sin(lineAngle + deltaAngle/2) - imagesize/2
+					];
+					ctx.globalAlpha = 0.7;
+					ctx.drawImage(image, ...imagepos.map(x => Math.floor(x)), imagesize, imagesize);
+					ctx.globalAlpha = 1;
+				}
 			}
 		} else {
 			// Time indicator around border
@@ -336,6 +396,7 @@ export function Clock(audioCtx) {
 			ctx.stroke();
 
 			// Beats and snap indicators
+			const snapInterval = 1 / divisions;
 			for (let beat = 0; beat < length; beat += snapInterval) {
 				const angle = beatToAngle(beat);
 				ctx.lineWidth = 2;

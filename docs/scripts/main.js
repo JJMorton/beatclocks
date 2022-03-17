@@ -92,6 +92,10 @@ window.addEventListener('load', async function() {
 		}
 
 		for (const clock of clocks) {
+			if (clock.toDelete) {
+				clocks.splice(clocks.indexOf(clock), 1);
+				continue;
+			}
 			clock.render(ctx, audioCtx.currentTime);
 			if (clock.containsPosition(mousePos.x, mousePos.y)) {
 				clock.showControls();

@@ -74,25 +74,25 @@ export function Clock(audioCtx) {
 	 */
 
 	const controls = [
-		{ name: "Record", image: 'sample', action: () => this.recordBeats() },
+		{ name: "Record", image: 'record', action: () => this.recordBeats() },
 		{ name: "Change sample", image: 'sample', action: () => this.nextSample() },
-		{ name: "Delete", image: 'sample', action: () => {
+		{ name: "Delete", image: 'delete', action: () => {
 			this.toDelete = true;
 			if (ticker) ticker.stop();
 		}},
-		{ name: "Volume", image: 'sample', slider: new Slider(
+		{ name: "Volume", image: 'volume', slider: new Slider(
 			() => this.getVolume(),
 			val => this.setVolume(val),
 			0, 1, 0, 0.4,
 			() => `Volume: ${Math.round(this.getVolume() * 100)}%`
 		)},
-		{ name: "Length", image: 'sample', slider: new Slider(
+		{ name: "Length", image: 'length', slider: new Slider(
 			() => this.getLength(),
 			val => this.setLength(val),
 			1, 12, 1, 4,
 			() => `Length: ${this.getLength()} beats`
 		)},
-		{ name: "Snapping", image: 'sample', slider: new Slider(
+		{ name: "Snapping", image: 'snapping', slider: new Slider(
 			() => divOptions.indexOf(divisions),
 			index => this.setDivisions(divOptions[index]),
 			0, divOptions.length - 1, 1, 4,
@@ -198,7 +198,8 @@ export function Clock(audioCtx) {
 			return;
 		}
 		const angle = Math.atan2(y - position.y, x - position.x) + Math.PI;
-		const control = controls[Math.floor(controls.length * 0.5 * angle / Math.PI)];
+		const index = Math.floor(controls.length * 0.5 * angle / Math.PI);
+		const control = controls[index];
 		if (control.action) {
 			control.action(this);
 		}
@@ -363,7 +364,7 @@ export function Clock(audioCtx) {
 			// Controls pie
 			for (let i = 0; i < controls.length; i++) {
 				const deltaAngle = 2 * Math.PI / controls.length;
-				const lineAngle = i * deltaAngle;
+				const lineAngle = i * deltaAngle - Math.PI;
 				const endpoint = [position.x + radius * Math.cos(lineAngle), position.y + radius * Math.sin(lineAngle)];
 				ctx.lineWidth = 2;
 				ctx.beginPath();
@@ -371,14 +372,16 @@ export function Clock(audioCtx) {
 				ctx.lineTo(...endpoint.map(x => Math.floor(x)));
 				ctx.stroke();
 				if (controls[i].image && images[controls[i].image]) {
-					const imagesize = radius / 4;
-					const imageradius = handleRadius + (radius - handleRadius) / 2;
+					const imagesize = radius / 3;
+					const imageradius = handleRadius + (radius - handleRadius) * 0.54;
 					const image = images[controls[i].image];
 					const imagepos = [
-						position.x + imageradius * Math.cos(lineAngle - deltaAngle/2) - imagesize/2,
-						position.y + imageradius * Math.sin(lineAngle - deltaAngle / 2) - imagesize/2
+						position.x + imageradius * Math.cos(lineAngle + deltaAngle/2) - imagesize/2,
+						position.y + imageradius * Math.sin(lineAngle + deltaAngle/2) - imagesize/2
 					];
+					ctx.globalAlpha = 0.7;
 					ctx.drawImage(image, ...imagepos.map(x => Math.floor(x)), imagesize, imagesize);
+					ctx.globalAlpha = 1;
 				}
 			}
 		} else {

@@ -48,7 +48,7 @@ body {
 
 .slider-button {
 	border: 2px solid var(--color-controls);
-	border-radius: 2em;
+	border-radius: 5px;
 	font-family: sans-serif;
 	pointer-events: all;
 	cursor: ns-resize;
@@ -76,10 +76,10 @@ body {
 	font-size: 150%;
 	font-weight: bold;
 	background-color: var(--color-controls);
-	border-radius: 2em;
-	padding: 0.4em 0.4em 0.2em 0.4em;
+	padding: 0.4em;
 	text-align: center;
 	box-sizing: border-box;
 	width: 3em;
 	height: 2em;
+	text-decoration: underline;
 }

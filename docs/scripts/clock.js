@@ -128,6 +128,8 @@ export function Clock(audioCtx) {
 	this.getLength = () => length;
 	this.setLength = function(val) {
 		length = val;
+		radius = 50 * (1 + 2*length/12);
+		handleRadius = 0.2 * radius;
 		this.recalculateBeats();
 		return this;
 	}
@@ -372,7 +374,7 @@ export function Clock(audioCtx) {
 				ctx.lineTo(...endpoint.map(x => Math.floor(x)));
 				ctx.stroke();
 				if (controls[i].image && images[controls[i].image]) {
-					const imagesize = radius / 3;
+					const imagesize = Math.min(radius / 3, 28);
 					const imageradius = handleRadius + (radius - handleRadius) * 0.54;
 					const image = images[controls[i].image];
 					const imagepos = [

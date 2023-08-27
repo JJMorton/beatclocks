@@ -1,3 +1,5 @@
+**beatclocks**
+
 *A different kind of drum machine, visualised in circles.*
 
 ![Preview image](./preview.png)
@@ -5,7 +7,7 @@
 ***
 
 **TODO:**
-- [ ] Show sample name when changing
+- [x] Show sample name when changing
 - [ ] Swing
 - [ ] Audio effects (reverb, delay etc.)
 - [ ] More / better samples

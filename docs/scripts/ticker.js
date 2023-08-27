@@ -6,7 +6,8 @@
 export function Ticker(audioCtx, sample) {
 
 	const gainNode = audioCtx.createGain();
-	let audioBuffer = sample.buffer;
+	// let audioBuffer = sample.buffer;
+	let audioSample = sample;
 	let queue = []; // The times of beats to be played in ms
 	let startTime = 0; // The time that the first beat was played at
 	let intervalID = null;
@@ -20,7 +21,7 @@ export function Ticker(audioCtx, sample) {
 			if (repeatInterval > 0) queue.push(time + repeatInterval)
 			if (startTime + time >= audioCtx.currentTime) {
 				const source = audioCtx.createBufferSource();
-				source.buffer = audioBuffer;
+				source.buffer = audioSample.buffer;
 				source.connect(gainNode);
 				source.start(startTime + time);
 			}
@@ -93,7 +94,7 @@ export function Ticker(audioCtx, sample) {
 	 */
 	this.playNow = function() {
 		const source = audioCtx.createBufferSource();
-		source.buffer = audioBuffer;
+		source.buffer = audioSample.buffer;
 		source.connect(gainNode);
 		source.start(0);
 		return this;
@@ -103,8 +104,12 @@ export function Ticker(audioCtx, sample) {
 	 * Set the audio sample for the ticker to play.
 	 */
 	this.setSample = function(sample) {
-		audioBuffer = sample.buffer;
+		audioSample = sample;
 		return this;
+	}
+
+	this.getSample = function() {
+		return audioSample;
 	}
 
 	/**

@@ -1,6 +1,7 @@
 import { Ticker } from './ticker.js';
 import { audioSamples } from './samples.js';
 import { Slider, Tooltip } from './controls.js';
+import { getMousePos } from './mouse.js';
 
 // Resolves the promise at 'time'
 function audioTimeTrigger(audioCtx, time) {
@@ -226,11 +227,15 @@ export function Clock(audioCtx) {
 	}
 
 	/**
-	 * Change the clock's sample sound
+	 * Change the clock's sample sound, also shows a tooltip
 	 */
 	this.nextSample = function() {
 		sample = audioSamples[(audioSamples.findIndex(s => s === sample) + 1) % audioSamples.length];
-		if (ticker) ticker.setSample(sample);
+		if (ticker && sample) {
+			ticker.setSample(sample);
+			const mousePos = getMousePos();
+			new Tooltip(mousePos.x, mousePos.y, () => `Sample ${ticker.getSample().name.toUpperCase()}`, 500);
+		}
 		return this;
 	}
 

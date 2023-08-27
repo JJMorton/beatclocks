@@ -13,6 +13,7 @@
 import { Clock } from './clock.js';
 import { fetchSamples } from './samples.js';
 import { Slider, Tooltip } from './controls.js';
+import { getMousePos } from './mouse.js';
 
 async function initAudioContext() {
 
@@ -52,7 +53,6 @@ window.addEventListener('load', async function() {
 
 	let showDebug = false;
 	const debuginfoElt = document.getElementById("debughoverinfo");
-	let mousePos = { x: 0, y: 0 };
 
 	const clocks = [];
 	let bpm = 100;
@@ -82,6 +82,7 @@ window.addEventListener('load', async function() {
 
 		startTooltip.remove();
 
+		const mousePos = getMousePos();
 		const clicked = clocks.find(c => c.containsPosition(mousePos.x, mousePos.y));
 		if (clicked) {
 			clicked.click(mousePos.x, mousePos.y);
@@ -103,6 +104,8 @@ window.addEventListener('load', async function() {
 	(function animate() {
 		ctx.fillStyle = background;
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+		const mousePos = getMousePos();
 
 		if (showDebug) {
 			debuginfoElt.innerText = "Hover a clock to see its debug info";
@@ -130,10 +133,6 @@ window.addEventListener('load', async function() {
 
 	// UI handlers
 	{
-		window.addEventListener('mousemove', e => {
-			mousePos = { x: e.clientX, y: e.clientY };
-		});
-
 		window.addEventListener('keydown', e => {
 			if (e.code === 'ShiftLeft') {
 				showDebug = true;

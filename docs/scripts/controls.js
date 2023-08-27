@@ -54,7 +54,7 @@ export function Slider(getter, setter, min, max, step, sens, tooltip = null) {
 
 }
 
-export function Tooltip(x, y, getContent) {
+export function Tooltip(x, y, getContent, timeout=0) {
 	this.element = document.createElement('p');
 	this.element.classList.add('tooltip');
 	this.element.textContent = getContent();
@@ -72,4 +72,8 @@ export function Tooltip(x, y, getContent) {
 		window.removeEventListener('mousemove', listener);
 		this.element.remove();
 	};
+
+	if (timeout > 0) {
+		window.setTimeout(() => this.remove(), timeout);
+	}
 }

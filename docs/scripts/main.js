@@ -12,15 +12,34 @@
 
 import { Clock } from './clock.js';
 import { fetchSamples } from './samples.js';
-import { Slider } from './controls.js';
+import { Slider, Tooltip } from './controls.js';
+
+async function initAudioContext() {
+
+	// Initialise the JS audio context
+	const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+	await audioCtx.suspend()
+	window.addEventListener("mousedown", () => audioCtx.resume());
+
+	// Create a gain node to control the volume with
+	const gainNode = audioCtx.createGain();
+	gainNode.gain.setValueAtTime(0.7, 0);
+	gainNode.connect(audioCtx.destination);
+
+	// Need to fetch and process the samples before trying to use them
+	await fetchSamples(audioCtx);
+
+	return {audioCtx, gainNode};
+}
 
 window.addEventListener('load', async function() {
 	'use strict';
 
-	const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-	const gainNode = audioCtx.createGain();
-	gainNode.gain.setValueAtTime(0.7, 0);
-	gainNode.connect(audioCtx.destination);
+	// The JS audio context, and a gain node to control the volume
+	// let audioCtx = null;
+	// let gainNode = null;
+	const {audioCtx, gainNode} = await initAudioContext()
+	const startTooltip = new Tooltip(100, 100, () => "Click anywhere to create a clock");
 
 	const canvas = document.querySelector('#maincanvas');
 	const ctx = canvas.getContext('2d', {alpha: false});
@@ -35,9 +54,6 @@ window.addEventListener('load', async function() {
 	const debuginfoElt = document.getElementById("debughoverinfo");
 	let mousePos = { x: 0, y: 0 };
 
-	// Need to fetch and process the samples before trying to use them
-	await fetchSamples(audioCtx);
-
 	const clocks = [];
 	let bpm = 100;
 	let timeOffset = -0.3; // So that we don't skip the first beat when the page is loading etc.
@@ -49,20 +65,23 @@ window.addEventListener('load', async function() {
 		}
 	}
 
-	// Add a regular hihat clock to start with
-	clocks.push(
-		new Clock(audioCtx)
-			.setPosition(canvas.width / 2, canvas.height / 2)
-			.setLength(2)
-			.setTimeOffset(timeOffset)
-			.setBPM(bpm)
-			.setBeats([0, 1])
-			.connect(gainNode)
-	);
+	// // Add a regular hihat clock to start with
+	// clocks.push(
+	// 	new Clock(audioCtx)
+	// 		.setPosition(canvas.width / 2, canvas.height / 2)
+	// 		.setLength(2)
+	// 		.setTimeOffset(timeOffset)
+	// 		.setBPM(bpm)
+	// 		.setBeats([0, 1])
+	// 		.connect(gainNode)
+	// );
 
 	// Let clocks handle clicks, or add a new clock if clicked background
-	canvas.addEventListener('mousedown', e => {
+	canvas.addEventListener('mousedown', async e => {
 		if (e.button != 0) return;
+
+		startTooltip.remove();
+
 		const clicked = clocks.find(c => c.containsPosition(mousePos.x, mousePos.y));
 		if (clicked) {
 			clicked.click(mousePos.x, mousePos.y);
